@@ -1,253 +1,202 @@
-/* ============================================================
-   Projeto Final - Sistema de Estoque
-   Tarefa 1: Menu e Cadastro de Produto
-
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
-#define MAX_PRODUTOS 100
 #define TAM_NOME 50
 
-/* ---------- Estrutura do Produto ---------- */
 typedef struct {
     int codigo;
     char nome[TAM_NOME];
-    char prateleira;      /* A, B, C ou D */
+    char prateleira;
     float precoUnitario;
-    int quantidade;
-    int disponivel;       /* calculado: 1 se quantidade > 0, senão 0 */
+    int quantidadeEstoque;
+    int disponivelVenda;
 } Produto;
 
-/* ---------- "Banco de dados" em memória ---------- */
-Produto estoque[MAX_PRODUTOS];
-int totalProdutos = 0;
+/* Le uma linha inteira do teclado, remove o '\n' e limpa o buffer se sobrar algo */
+void lerLinha(char *buffer, int tamanho) {
+    if (fgets(buffer, tamanho, stdin) != NULL) {
+        size_t len = strlen(buffer);
+        if (len > 0 && buffer[len - 1] == '\n') {
+            buffer[len - 1] = '\0';
+        } else {
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF);
+        }
+    }
+}
 
-/* ---------- Protótipos ---------- */
-void exibirMenu(void);
-void cadastrarProduto(void);
-void limparBufferEntrada(void);
-void lerLinha(char *destino, int tamanho);
-
-int lerInteiroPositivo(const char *mensagem);
-int lerInteiroNaoNegativo(const char *mensagem);
-float lerFloatPositivo(const char *mensagem);
-char lerPrateleiraValida(const char *mensagem);
-
-/* ============================================================
-   main: laço principal do menu, repete até o usuário sair
-   ============================================================ */
-int main(void) {
-    int opcao;
+/* Codigo deve ser um numero inteiro positivo */
+int lerCodigo() {
+    char entrada[100];
+    int codigo;
+    int valido = 0;
 
     do {
+        printf("Codigo do produto: ");
+        lerLinha(entrada, sizeof(entrada));
+
+        if (sscanf(entrada, "%d", &codigo) == 1 && codigo > 0) {
+            valido = 1;
+        } else {
+            printf("Erro: o codigo deve ser um numero inteiro positivo.\n");
+        }
+    } while (!valido);
+
+    return codigo;
+}
+
+/* Nome nao pode ficar em branco */
+void lerNome(char *nome) {
+    int valido = 0;
+    int i;
+
+    do {
+        printf("Nome do produto: ");
+        lerLinha(nome, TAM_NOME);
+
+        i = 0;
+        while (nome[i] == ' ') i++;
+
+        if (strlen(nome) == 0 || nome[i] == '\0') {
+            printf("Erro: o nome nao pode ficar em branco.\n");
+        } else {
+            valido = 1;
+        }
+    } while (!valido);
+}
+
+/* Prateleira deve ser uma letra entre A e D */
+char lerPrateleira() {
+    char entrada[100];
+    char prateleira = '\0';
+    int valido = 0;
+
+    do {
+        printf("Prateleira (A, B, C ou D): ");
+        lerLinha(entrada, sizeof(entrada));
+
+        valido = 0;
+        if (strlen(entrada) == 1) {
+            prateleira = (char) toupper((unsigned char) entrada[0]);
+            if (prateleira >= 'A' && prateleira <= 'D') {
+                valido = 1;
+            }
+        }
+
+        if (!valido) {
+            printf("Erro: prateleira invalida. Use apenas A, B, C ou D.\n");
+        }
+    } while (!valido);
+
+    return prateleira;
+}
+
+/* Preco unitario deve ser maior que zero */
+float lerPreco() {
+    char entrada[100];
+    float preco;
+    int valido = 0;
+
+    do {
+        printf("Preco unitario: ");
+        lerLinha(entrada, sizeof(entrada));
+
+        if (sscanf(entrada, "%f", &preco) == 1 && preco > 0) {
+            valido = 1;
+        } else {
+            printf("Erro: o preco deve ser maior que zero.\n");
+        }
+    } while (!valido);
+
+    return preco;
+}
+
+/* Quantidade em estoque deve ser maior ou igual a zero */
+int lerQuantidade() {
+    char entrada[100];
+    int quantidade;
+    int valido = 0;
+
+    do {
+        printf("Quantidade em estoque: ");
+        lerLinha(entrada, sizeof(entrada));
+
+        if (sscanf(entrada, "%d", &quantidade) == 1 && quantidade >= 0) {
+            valido = 1;
+        } else {
+            printf("Erro: a quantidade nao pode ser negativa.\n");
+        }
+    } while (!valido);
+
+    return quantidade;
+}
+
+void cadastrarProduto() {
+    Produto p;
+
+    printf("\n=== Cadastro de Produto ===\n");
+
+    p.codigo = lerCodigo();
+    lerNome(p.nome);
+    p.prateleira = lerPrateleira();
+    p.precoUnitario = lerPreco();
+    p.quantidadeEstoque = lerQuantidade();
+
+    /* Disponivel para venda eh calculado pelo sistema, nunca informado pelo usuario */
+    p.disponivelVenda = (p.quantidadeEstoque > 0) ? 1 : 0;
+
+    printf("\n--- Resumo do Produto Cadastrado ---\n");
+    printf("Codigo..................: %d\n", p.codigo);
+    printf("Nome....................: %s\n", p.nome);
+    printf("Prateleira..............: %c\n", p.prateleira);
+    printf("Preco unitario..........: %.2f\n", p.precoUnitario);
+    printf("Quantidade em estoque...: %d\n", p.quantidadeEstoque);
+    printf("Disponivel para venda...: %s (%d)\n",
+           p.disponivelVenda ? "Sim" : "Nao", p.disponivelVenda);
+    printf("-------------------------------------\n\n");
+}
+
+void exibirMenu() {
+    printf("===== MENU PRINCIPAL =====\n");
+    printf("1 - Cadastrar Produto\n");
+    printf("2 - Sair\n");
+    /* Novas opcoes de futuras tarefas entram aqui,
+       seguindo o mesmo padrao "numero - Descricao" */
+    printf("===========================\n");
+    printf("Escolha uma opcao: ");
+}
+
+int main(void) {
+    char entrada[100];
+    int opcao;
+    int continuar = 1;
+
+    while (continuar) {
         exibirMenu();
-        opcao = lerInteiroNaoNegativo("Escolha uma opcao: ");
+        lerLinha(entrada, sizeof(entrada));
+
+        if (sscanf(entrada, "%d", &opcao) != 1) {
+            printf("Opcao invalida. Tente novamente.\n\n");
+            continue;
+        }
 
         switch (opcao) {
             case 1:
                 cadastrarProduto();
                 break;
             case 2:
-                printf("\nSaindo do sistema... ate mais!\n");
+                printf("Encerrando o sistema. Ate logo!\n");
+                continuar = 0;
                 break;
+            /* Novos "case" entram aqui conforme novas opcoes
+               forem adicionadas ao menu */
             default:
-                printf("\nOpcao invalida! Tente novamente.\n");
+                printf("Opcao invalida. Tente novamente.\n\n");
+                break;
         }
-
-        printf("\n");
-
-    } while (opcao != 2);
+    }
 
     return 0;
-}
-
-/* ============================================================
-   Exibe o menu principal.
-   Novas tarefas devem adicionar novas linhas aqui (e um novo
-   "case" correspondente no switch do main).
-   ============================================================ */
-void exibirMenu(void) {
-    printf("=====================================\n");
-    printf("      SISTEMA DE ESTOQUE - MENU\n");
-    printf("=====================================\n");
-    printf("1 - Cadastrar Produto\n");
-    printf("2 - Sair\n");
-    printf("=====================================\n");
-}
-
-/* ============================================================
-   Cadastra um novo produto, validando cada campo.
-   ============================================================ */
-void cadastrarProduto(void) {
-
-    if (totalProdutos >= MAX_PRODUTOS) {
-        printf("\nLimite maximo de produtos atingido!\n");
-        return;
-    }
-
-    Produto novo;
-
-    printf("\n----- Cadastro de Produto -----\n");
-
-    /* Codigo: numero positivo */
-    novo.codigo = lerInteiroPositivo("Codigo do produto: ");
-
-    /* Nome: string, nao pode ficar em branco */
-    do {
-        printf("Nome do produto: ");
-        lerLinha(novo.nome, TAM_NOME);
-        if (strlen(novo.nome) == 0) {
-            printf("O nome nao pode ficar em branco! Tente novamente.\n");
-        }
-    } while (strlen(novo.nome) == 0);
-
-    /* Prateleira: apenas A, B, C ou D */
-    novo.prateleira = lerPrateleiraValida("Prateleira (A, B, C ou D): ");
-
-    /* Preco unitario: deve ser maior que zero */
-    novo.precoUnitario = lerFloatPositivo("Preco unitario: ");
-
-    /* Quantidade em estoque: deve ser >= 0 */
-    novo.quantidade = lerInteiroNaoNegativo("Quantidade em estoque: ");
-
-    /* Disponivel para venda: calculado pelo sistema */
-    novo.disponivel = (novo.quantidade > 0) ? 1 : 0;
-
-    /* Armazena no "banco" em memoria */
-    estoque[totalProdutos] = novo;
-    totalProdutos++;
-
-    /* Resumo do cadastro */
-    printf("\n----- Resumo do Cadastro -----\n");
-    printf("Codigo............: %d\n", novo.codigo);
-    printf("Nome..............: %s\n", novo.nome);
-    printf("Prateleira........: %c\n", novo.prateleira);
-    printf("Preco unitario....: %.2f\n", novo.precoUnitario);
-    printf("Quantidade........: %d\n", novo.quantidade);
-    printf("Disponivel venda..: %s (%d)\n",
-           novo.disponivel ? "SIM" : "NAO", novo.disponivel);
-    printf("-------------------------------\n");
-}
-
-/* ============================================================
-   Funcoes auxiliares de entrada com validacao
-   ============================================================ */
-
-/* Limpa o restante do buffer de entrada (ate o \n ou EOF) */
-void limparBufferEntrada(void) {
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF) {
-        /* descarta */
-    }
-}
-
-/* Le uma linha de texto (usada para o nome) e remove o \n final */
-void lerLinha(char *destino, int tamanho) {
-    if (fgets(destino, tamanho, stdin) != NULL) {
-        size_t len = strlen(destino);
-        if (len > 0 && destino[len - 1] == '\n') {
-            destino[len - 1] = '\0';
-        } else {
-            /* linha maior que o buffer: descarta o resto */
-            limparBufferEntrada();
-        }
-    } else {
-        destino[0] = '\0';
-    }
-}
-
-/* Le um inteiro que deve ser estritamente positivo (> 0) */
-int lerInteiroPositivo(const char *mensagem) {
-    int valor;
-    int ok;
-
-    do {
-        printf("%s", mensagem);
-        ok = scanf("%d", &valor);
-        limparBufferEntrada();
-
-        if (ok != 1) {
-            printf("Entrada invalida! Digite um numero inteiro.\n");
-            continue;
-        }
-        if (valor <= 0) {
-            printf("O valor deve ser um numero positivo! Tente novamente.\n");
-        }
-    } while (ok != 1 || valor <= 0);
-
-    return valor;
-}
-
-/* Le um inteiro que deve ser maior ou igual a zero (usado tambem no menu) */
-int lerInteiroNaoNegativo(const char *mensagem) {
-    int valor;
-    int ok;
-
-    do {
-        printf("%s", mensagem);
-        ok = scanf("%d", &valor);
-        limparBufferEntrada();
-
-        if (ok != 1) {
-            printf("Entrada invalida! Digite um numero inteiro.\n");
-            continue;
-        }
-        if (valor < 0) {
-            printf("Quantidade negativa nao existe! Tente novamente.\n");
-        }
-    } while (ok != 1 || valor < 0);
-
-    return valor;
-}
-
-/* Le um float que deve ser estritamente positivo (> 0) */
-float lerFloatPositivo(const char *mensagem) {
-    float valor;
-    int ok;
-
-    do {
-        printf("%s", mensagem);
-        ok = scanf("%f", &valor);
-        limparBufferEntrada();
-
-        if (ok != 1) {
-            printf("Entrada invalida! Digite um numero (ex: 10.50).\n");
-            continue;
-        }
-        if (valor <= 0) {
-            printf("O preco deve ser maior que zero! Tente novamente.\n");
-        }
-    } while (ok != 1 || valor <= 0);
-
-    return valor;
-}
-
-/* Le a prateleira e valida se e uma das letras permitidas (A, B, C, D) */
-char lerPrateleiraValida(const char *mensagem) {
-    char buffer[10];
-    char letra;
-    int valida;
-
-    do {
-        printf("%s", mensagem);
-        lerLinha(buffer, sizeof(buffer));
-
-        /* remove espacos e pega o primeiro caractere valido */
-        letra = '\0';
-        for (int i = 0; buffer[i] != '\0'; i++) {
-            if (!isspace((unsigned char)buffer[i])) {
-                letra = (char)toupper((unsigned char)buffer[i]);
-                break;
-            }
-        }
-
-        valida = (letra == 'A' || letra == 'B' || letra == 'C' || letra == 'D');
-
-        if (!valida) {
-            printf("Prateleira invalida! Use apenas A, B, C ou D.\n");
-        }
-    } while (!valida);
-
-    return letra;
 }
